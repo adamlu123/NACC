@@ -1,0 +1,75 @@
+---
+title: "Longitudinal Analysis of NACC Data"
+author: "Yadong"
+date: "11/26/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load the data
+
+```{r Load data}
+library("haven")
+library("nlme")
+df <- read_sas("grill11162017.sas7bdat")
+
+dt0 <- df[, c("NACCID","NACCVNUM","VISITMO","VISITDAY","VISITYR","EDUC","SEX","RACE","INSEX","INRELTO","INRACE","INEDUC","INLIVWTH","INVISITS","ANYMEDS","NACCMMSE", "DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )]
+dt0$asian <- 0
+dt0$asian[dt0$INRACE == 5] <- 1
+
+dt0$spouse <- 0
+dt0$spouse[dt0$INRELTO == 1] <- 1
+dt0$child <- 0
+dt0$child[dt0$INRELTO == 2] <- 1
+
+NPI <- dt0[,c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )]
+NPI[NPI == 8] <- 0
+NPI[NPI == 9] <- NA
+NPI[NPI == -4] <- NA
+
+dt0[,c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )] <- NPI
+dt0$NPI.tot <- rowSums( NPI )
+dt0 <- na.omit(dt0)  # left with 23357 obs
+
+
+indx <- apply(df, 2, function(x) any(is.na(x)) )
+which(indx) #ANYMEDS has NA value
+
+```
+
+# Delete the participants with 1 observation. 
+```{r}
+n.obs <- unlist( lapply(split(dt0$NACCID, dt0$NACCID),  length  ) )
+table(n.obs)
+length(unique(dt0$NACCID))  # total number of patients
+
+drop <- n.obs[n.obs == 1]
+drop.id <- names(drop)
+dt0$NACCID[is.element(dt0$NACCID, drop.id) ] <- NA
+dt0 <- na.omit(dt0) # left with dt0: 24200 obs
+```
+
+
+# Fit a LME
+
+```{r}
+library(nlme)
+fit.dt0 <- lme(NPI.tot ~ NACCVNUM + NACCMMSE + asian, #+ month* log.vload0,
+                method = "ML",
+                random = reStruct(~ 1 | NACCID, pdClass = "pdSymm"),
+                data = dt0
+)
+summary(fit.dt0)
+```
+
+
+
+
+
+
+
+
+
