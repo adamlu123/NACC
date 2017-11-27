@@ -17,6 +17,9 @@ library("nlme")
 df <- read_sas("grill11162017.sas7bdat")
 
 dt0 <- df[, c("NACCID","NACCVNUM","VISITMO","VISITDAY","VISITYR","EDUC","SEX","RACE","INSEX","INRELTO","INRACE","INEDUC","INLIVWTH","INVISITS","ANYMEDS","NACCMMSE", "DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )]
+dt0$INRACE[dt0$INRACE == -4] <- NA
+dt0 <- na.omit(dt0)
+
 dt0$asian <- 0
 dt0$asian[dt0$INRACE == 5] <- 1
 
@@ -54,6 +57,7 @@ dt0 <- na.omit(dt0) # left with dt0: 24200 obs
 
 
 # Fit a LME
+Random intercept only. 
 
 ```{r}
 library(nlme)
