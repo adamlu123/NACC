@@ -14,19 +14,36 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Load data}
 library("haven")
 library("nlme")
-df <- read_sas("grill11162017.sas7bdat")
+df <- read_sas("/Users/admin/github_project/NACC_dt/grill11162017.sas7bdat")
 
-dt0 <- df[, c("NACCID","NACCVNUM","VISITMO","VISITDAY","VISITYR","EDUC","SEX","RACE","INSEX","INRELTO","INRACE","INEDUC","INLIVWTH","INVISITS","ANYMEDS","NACCMMSE", "DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )]
-dt0$INRACE[dt0$INRACE == -4] <- NA
-dt0 <- na.omit(dt0)
+dt0 <- df[, c("NACCID","NACCVNUM","VISITMO","VISITDAY","VISITYR","EDUC","SEX","RACE","INSEX","INRELTO","INRACE","INEDUC","INLIVWTH","INVISITS","ANYMEDS","NACCMMSE","DEL", "DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV","PROBAD" )]
 
-dt0$asian <- 0
-dt0$asian[dt0$INRACE == 5] <- 1
+dt0 <- dt0[dt0$PROBAD == 1,]
+# dt0$PROBAD[dt0$PROBAD != 1] <- NA
+# # dt0 <- na.omit(dt0)
+# keep_id <- dt0$NACCID[dt0$INRACE!=-4 & dt0$NACCVNUM == 1] 
+# dt0 <- dt0[dt0$NACCID %in% keep_id,]  # delete first INRACE=-4
 
-dt0$spouse <- 0
-dt0$spouse[dt0$INRELTO == 1] <- 1
-dt0$child <- 0
-dt0$child[dt0$INRELTO == 2] <- 1
+dt0 <- dt0[dt0$INRACE!=-4 & dt0$INRACE!=99,] # INRACE
+dt0 <- dt0[dt0$NACCVNUM ==1 ,]
+
+# 
+# n.obs <- unlist( lapply(split(dt0$NACCID, dt0$NACCID),  length  ) )
+# race.list <- dt0$INRACE[dt0$NACCVNUM==1]
+# race <- rep(dt0$INRACE[dt0$NACCVNUM==1], n.obs)
+# dt0$INRACE <- race
+# dt0 <- dt0[dt0$INRACE!=99,] # 99 is unknown
+# 
+# # write to data file
+# dim(dt0)
+# write.csv(dt0, "/Users/admin/github_project/NACC/First-visit.csv")
+# dt0$asian <- 0
+# dt0$asian[dt0$INRACE == 5] <- 1
+# # 
+# dt0$spouse <- 0
+# dt0$spouse[dt0$INRELTO == 1] <- 1
+# dt0$child <- 0
+# dt0$child[dt0$INRELTO == 2] <- 1
 
 NPI <- dt0[,c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" )]
 NPI[NPI == 8] <- 0
@@ -37,11 +54,34 @@ dt0[,c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNS
 dt0$NPI.tot <- rowSums( NPI )
 dt0 <- na.omit(dt0)  # left with 23357 obs
 
+dt0 <- dt0[dt0$NACCMMSE<=30 & dt0$NACCMMSE !=-4, ]
 
-indx <- apply(df, 2, function(x) any(is.na(x)) )
-which(indx) #ANYMEDS has NA value
-
+asian <- dt0[dt0$INRACE==5,]
+others <- dt0[dt0$INRACE!=5,]
+white <- dt0[dt0$INRACE==1,]
 ```
+
+
+# Compare informant type= asian and others:
+```{r}
+# rate of having syptoms 
+for(i in c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" ) ){
+print(i)
+print( 1- (table(asian[,i])[1]  / dim(asian)[1] ) ) # rate of having syptoms 
+print( 1- (table(others[,i])[1]  / dim(others)[1] ) )
+}
+
+
+
+for(i in c("DELSEV","HALLSEV","AGITSEV","DEPDSEV","ANXSEV","ELATSEV","APASEV","DISNSEV","IRRSEV","MOTSEV","NITESEV","APPSEV" ) ){
+print(i)
+print( 1- (table(asian[,i])[1]  / dim(asian)[1] ) ) # rate of having syptoms 
+print( 1- (table(white[,i])[1]  / dim(white)[1] ) )
+}
+# 
+```
+
+
 
 # Delete the participants with 1 observation. 
 ```{r}
@@ -61,7 +101,7 @@ Random intercept only.
 
 ```{r}
 library(nlme)
-fit.dt0 <- lme(NPI.tot ~ NACCVNUM + NACCMMSE + asian, #+ month* log.vload0,
+fit.dt0 <- lme(NPI.tot ~ NACCVNUM + NACCMMSE + asian + spouse, #+ month* log.vload0,
                 method = "ML",
                 random = reStruct(~ 1 | NACCID, pdClass = "pdSymm"),
                 data = dt0
