@@ -32,10 +32,7 @@ for(i in id.index){
       if(df.temp$PROBAD[j] < df.temp$PROBAD[j-1]) data$NONDECREASE.AD[data$NACCID == i] = 1
     }
   }
-  
 }
-
-
 
 ### 2.  Convert NPI scores of 8s to 0
 data[,133:158][data[,133:158] == 8] <- 0
@@ -93,6 +90,6 @@ data1 <- data1[data1$NONDECREASE == 0 & data1$NONDECREASE.AD == 0,]
 
 ### 12.  Select visits with PROBAD and DEMENTED diagnosis (PROBAD==1 & DEMENTED==1)
 data1 <- data1[data1$PROBAD == 1 & data1$DEMENTED == 1,]
-
+write.csv(data1, "sub-sample.csv")
 
 
