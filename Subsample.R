@@ -73,15 +73,6 @@ data$INFAGE <- data$VISITYR - data$INBIRYR
 data[,"INHISP"][data[,"INHISP"] == 9] <- NA
 data[,"INRACE"][data[,"INRACE"] == 99] <- NA
 
-### 9.  Create subset with:
-
-data1 <- data[, c("NACCID", "NACCVNUM",
-"AGE", "SEX",
-"DEMENTED", "PROBAD",
-"NPITOTALSEV", "NACCMMSE",
-"INFAGE", "INRELTO", "INRACE", "INEDUC", "INHISP",
-"NONDECREASE", "NONDECREASE.AD")]
-
 ### 10.  Remove NA from (9) subset data
 data1 <- na.omit(data1)
 
@@ -92,4 +83,10 @@ data1 <- data1[data1$NONDECREASE == 0 & data1$NONDECREASE.AD == 0,]
 data1 <- data1[data1$PROBAD == 1 & data1$DEMENTED == 1,]
 write.csv(data1, "sub-sample.csv")
 
-
+### 9.  Create subset with:
+data1 <- data[, c("NACCID", "NACCVNUM",
+                  "AGE", "SEX", "INSEX",
+                  "DEMENTED", "PROBAD",
+                  "NPITOTALSEV", "NACCMMSE",
+                  "INFAGE", "INRELTO", "INRACE", "INEDUC", "INHISP",
+                  "NONDECREASE", "NONDECREASE.AD")]
