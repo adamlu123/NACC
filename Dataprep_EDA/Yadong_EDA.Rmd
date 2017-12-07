@@ -1,0 +1,228 @@
+---
+title: "Data_pre"
+author: "Yadong"
+date: "12/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+grill <- df
+id.index <- df$NACCID
+grill$DECREASE = 0
+grill$DECREASE.AD = 0
+
+for(i in id.index){
+  df.temp = grill[grill$NACCID == i,]
+  mlength = dim(df.temp)[1]
+
+  # Flag for DEMENTED Consistency
+  # if(mlength==1){if(df.temp$DEMENTED==1){grill$NONDECREASE[grill$NACCID==i]=1}}
+
+  if(mlength>1){
+    for(j in 2:mlength){
+      if(df.temp$DEMENTED[j] < df.temp$DEMENTED[j-1]){ grill$DECREASE[grill$NACCID == i] = 1}
+    }
+  }
+
+  # Flag for ProbAD Consistency
+  # if(mlength==1){if(df.temp$PROBAD==1){grill$NONDECREASE.AD[grill$NACCID==i]=1}}
+
+  if(mlength>1){
+    for(j in 2:mlength){
+      if(df.temp$PROBAD[j] < df.temp$PROBAD[j-1]) grill$DECREASE.AD[grill$NACCID == i] = 1
+    }
+  }
+
+}
+
+grill <- grill[grill$DECREASE == 0, ]
+grill <- grill[grill$DECREASE.AD == 0, ]
+grill <- grill[grill$DEMENTED == 1, ]
+grill <- grill[grill$PROBAD ==1 , ]
+
+
+length(unique(grill$NACCID))
+
+```
+
+
+# Add indicator for the race 
+```{r}
+grill$LW <- 0
+grill$LW[grill$INRACE==1 & grill$INHISP == 1] <- 1
+grill$NLW <- 0
+grill$NLW[grill$INRACE==1 & grill$INHISP == 0] <- 1
+grill$asian <- 0
+grill$asian[grill$INRACE==5] <- 1
+```
+
+
+# Select for MMSE: start a new dataframe called dt
+```{r}
+table(grill$NACCMMSE)
+dt <- grill[grill$NACCMMSE>-4 ,]
+dt <- dt[dt$NACCMMSE<95,]
+dim(dt)
+length(unique(dt$NACCID))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Data new
+
+```{r}
+grill <- read.csv("sub-sample.csv")
+grill <- read.csv("MyAlzDf.csv")
+colnames(grill)
+
+grill$LW <- 0
+grill$LW[grill$INRACE==1 & grill$INHISP == 1] <- 1
+grill$NLW <- 0
+grill$NLW[grill$INRACE==1 & grill$INHISP == 0] <- 1
+grill$asian <- 0
+grill$asian[grill$INRACE==5] <- 1
+
+grill$race_eth <- "other"
+grill$race_eth[grill$INRACE==1 & grill$INHISP == 1] <- "LW"
+grill$race_eth[grill$INRACE==1 & grill$INHISP == 0] <- "NLW"
+grill$race_eth[grill$INRACE==5] <- "asian"
+grill$race_eth[grill$INRACE==2 & grill$INHISP == 1] <- "LB"
+grill$race_eth[grill$INRACE==2 & grill$INHISP == 0] <- "NLB"
+
+
+
+grill$inedu <- 0
+grill$inedu[grill$INEDUC<12] <- "highsch"
+grill$inedu[grill$INEDUC>=12 & grill$INEDUC<16] <- "bach"
+grill$inedu[grill$INEDUC>=16] <- "grad"
+table(grill$inedu)
+
+table(grill$INRELTO)
+table(grill$INEDUC)
+
+df <- grill
+
+
+n.obs <- unlist( lapply(split(df$NACCID, df$NACCID),  length  ) )
+table(n.obs)
+
+### First visit
+df1 <- df[df$NACCVNUM==1,]
+df1 <- df1[df1$race_eth %in% c("LW","NLW","asian"), ]
+
+
+fit.1st <- lm(npi.score~ as.factor(race_eth== "LW") + as.factor(race_eth== "NLW") +as.factor(race_eth== "LB") +as.factor(race_eth== "NLB") +as.factor(race_eth== "other") 
+              + NACCMMSE + AGE 
+              + as.factor(INRELTO == 1) + as.factor(INRELTO == 2)
+              + as.factor(inedu == "grad"),
+              data = df1)
+summary(fit.1st)
+
+### Longitudinal 
+keep <- names(n.obs[n.obs>1])
+df2 <- df[df$NACCID %in% keep,]
+
+n.obs2 <- unlist( lapply(split(df2$NACCID, df2$NACCID),  length  ) )
+
+
+fit.lme <- lme(npi.score ~ NACCVNUM + NACCMMSE + asian + AGE  , 
+                method = "ML",
+                random = reStruct(~ 1 | NACCID, pdClass = "pdSymm"),
+                data = df2)
+summary(fit.lme)
+
+```
+
+# Spagetti plt
+
+```{r}
+library(ggplot2)
+colnames(df2)
+
+df2.asian <- df2[df2$asian==1,]
+ggplot(df, aes(x=NACCVNUM, y=npi.score ,color=factor(race_eth) )) +
+  geom_line() + geom_point() +
+  theme_bw()
+
+
+plot(df2.asian$npi.score~df2.asian$NACCVNUM)
+
+interaction.plot(df2.asian$NACCVNUM,
+df2.asian$NACCID, df2.asian$npi.score,
+xlab="time", ylab="Tolerance", legend=F)
+
+
+
+df2$race_eth <- as.factor(df2$race_eth)
+df2$raceid[df2$race_eth == "LW"] <- 1
+
+
+
+df2$race_eth <- factor(df2$race_eth, levels = rev(unique(df2$race_eth)), ordered=TRUE)
+df2grouped <- groupedData(npi.score~ NACCVNUM | NACCID, outer = ~ as.factor(INRACE), data = as.data.frame(df2) )
+```
+
+# Model
+```{r}
+
+summary.robust <- function(model) {
+s <- summary(model)
+X <- model.matrix(model)
+u2 <- residuals(model)^2
+XDX <- 0
+ 
+## Here one needs to calculate X'DX. But due to the fact that
+## D is huge (NxN), it is better to do it with a cycle.
+for(i in 1:nrow(X)) {
+XDX <- XDX + u2[i]*X[i,]%*%t(X[i,])
+}
+ 
+# inverse(X'X)
+XX1 <- solve(t(X)%*%X)
+ 
+# Variance calculation (Bread x meat x Bread)
+varcovar <- XX1 %*% XDX %*% XX1
+ 
+# degrees of freedom adjustment
+dfc <- sqrt(nrow(X))/sqrt(nrow(X)-ncol(X))
+ 
+# Standard errors of the coefficient estimates are the
+# square roots of the diagonal elements
+stdh <- dfc*sqrt(diag(varcovar))
+ 
+t <- model$coefficients/stdh
+p <- 2*pnorm(-abs(t))
+robust.CI.low <- model$coefficients - stdh*qnorm(0.975)
+robust.CI.high <- model$coefficients + stdh*qnorm(0.975)
+
+results <- cbind(model$coefficients, stdh, p, robust.CI.low, robust.CI.high)
+colnames(results) <- list("Estimate","Robust.se", "P_value", "robust.CI.low","robust.CI.high") #dimnames(s$coefficients)
+results
+}
+
+summary.robust(fit.1st)
+summary(fit.1st)
+
+```
+
