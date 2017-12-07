@@ -52,8 +52,8 @@ data$NPITOTALSEV <- npi_score
 data[,"NACCMMSE"][data[,"NACCMMSE"] > 30] <- NA
 data[,"NACCMMSE"][data[,"NACCMMSE"] == -4] <- NA
 
-### 6.  Convert INEDUC greater than 20 to NA
-data[,"INEDUC"][data[,"INEDUC"] > 20] <- NA
+### 6.  Convert INEDUC greater than 30 to NA
+data[,"INEDUC"][data[,"INEDUC"] == 99] <- NA
 data[,"INEDUC"][data[,"INEDUC"] == -4] <- NA
 
 data[,"INRELTO"][data[,"INRELTO"] == -4] <- NA
@@ -74,14 +74,14 @@ data[,"INHISP"][data[,"INHISP"] == 9] <- NA
 data[,"INRACE"][data[,"INRACE"] == 99] <- NA
 
 ### 10.  Remove NA from (9) subset data
-data1 <- na.omit(data1)
+data2 <- na.omit(data)
 
 ### 11.  Select subjects who are consistent from (9) subset data (NONDECREASE==0 & NONDECREASE.AD==0)
-data1 <- data1[data1$NONDECREASE == 0 & data1$NONDECREASE.AD == 0,]
+data2 <- data2[data2$NONDECREASE == 0 & data2$NONDECREASE.AD == 0,]
 
 ### 12.  Select visits with PROBAD and DEMENTED diagnosis (PROBAD==1 & DEMENTED==1)
-data1 <- data1[data1$PROBAD == 1 & data1$DEMENTED == 1,]
-write.csv(data1, "sub-sample.csv")
+data2 <- data2[data2$PROBAD == 1 & data2$DEMENTED == 1,]
+write.csv(data2, "sub-sample.csv")
 
 ### 9.  Create subset with:
 data1 <- data[, c("NACCID", "NACCVNUM",
@@ -90,3 +90,5 @@ data1 <- data[, c("NACCID", "NACCVNUM",
                   "NPITOTALSEV", "NACCMMSE",
                   "INFAGE", "INRELTO", "INRACE", "INEDUC", "INHISP",
                   "NONDECREASE", "NONDECREASE.AD")]
+
+
