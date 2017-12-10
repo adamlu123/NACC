@@ -131,20 +131,33 @@ table(n.obs)
 df1 <- df[df$NACCVNUM==1,]
 df1 <- df1[df1$race_eth %in% c("LW","NLW","asian"), ]
 
+df1$relation <- "Other"
+df1$relation[df1$INRELTO == 1] <- "spouse"
+df1$relation[df1$INRELTO == 2] <- "child"
+table(df1$relation)
+
 
 fit.1st <- lm(npi.score~ as.factor(race_eth== "LW") + as.factor(race_eth== "NLW") +as.factor(race_eth== "LB") +as.factor(race_eth== "NLB") +as.factor(race_eth== "other") 
-              + NACCMMSE + AGE 
-              + as.factor(INRELTO == 1) + as.factor(INRELTO == 2)
-              + as.factor(inedu == "grad"),
+              + NACCMMSE + AGE + as.factor(INSEX==2)+
+              + as.factor(relation == "spouse") + as.factor(relation == "Other")
+              + INEDUC,
               data = df1)
 summary(fit.1st)
+summary.robust(fit.1st)
+xtable(summary.robust(fit.1st))
+
+fit0.1st <- lm(npi.score ~ as.factor(race_eth== "LW") + as.factor(race_eth== "NLW") +as.factor(race_eth== "LB") + as.factor(race_eth== "NLB") +as.factor(race_eth== "other") 
+              + NACCMMSE ,
+              data = df1)
+summary(fit0.1st)
+summary.robust(fit0.1st)
 
 ### Longitudinal 
 keep <- names(n.obs[n.obs>1])
 df2 <- df[df$NACCID %in% keep,]
 
 n.obs2 <- unlist( lapply(split(df2$NACCID, df2$NACCID),  length  ) )
-
+table(n.obs2)
 
 fit.lme <- lme(npi.score ~ NACCVNUM + NACCMMSE + asian + AGE  , 
                 method = "ML",
