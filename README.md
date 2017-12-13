@@ -1,6 +1,6 @@
-# NACC
+# NACC UDS Analysis
 
-This is a project investigating the association between race and NPI score (Neuropsychiatric Inventory
+This study focuses on investigating the association between race/ethnicity and baseline NPI score (Neuropsychiatric Inventory
 ) for demented patients due Alzheimer's diseases. 
 
 Alzheimer's diseases research relies on accurate assessment of patient change over time. Usually a participant is accompanied with an informant, assessments depend on accurate and consistent ratings by informant. 
